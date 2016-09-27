@@ -1,0 +1,55 @@
+{
+  "name": "@aptoma/hapi-json-api",
+  "version": "0.1.0",
+  "description": "Hapi plugin for formatting output/errors according to the JSON API specification",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint --ext '.js' test *.js",
+    "watch": "mocha --watch 'test/**/*.js' '*.js' --timeout 500",
+    "test": "npm run lint && NODE_ENV=test istanbul cover -i '*.js' _mocha -- -u exports -R spec --timeout 3000 'test/**/*.test.js'",
+    "mocha-only-detect": "mocha-only-detector-glob **/*.test.js",
+    "ci": "npm test --coverage && istanbul report cobertura",
+    "changelog": "git log `git describe --tags --abbrev=0`..HEAD --pretty=format:\"  * %s\"",
+    "release": "npm run ci && release-it -n -i patch",
+    "release:minor": "npm run ci && release-it -n -i minor",
+    "release:major": "npm run ci && release-it -n -i major"
+  },
+  "engines": {
+    "node": ">=4.x.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aptoma/hapi-json-api"
+  },
+  "keywords": [],
+  "author": "Gunnar Lium <gunnar@aptoma.com>",
+  "contributors": [
+    "Martin Jonsson <martin@aptoma.com>"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/aptoma/hapi-json-api/issues"
+  },
+  "homepage": "https://github.com/aptoma/hapi-json-api",
+  "eslintConfig": {
+    "extends": "@aptoma/eslint-config",
+    "env": {
+      "node": true,
+      "mocha": true,
+      "es6": true
+    }
+  },
+  "dependencies": {
+    "ramda": "^0.22.1"
+  },
+  "devDependencies": {
+    "@aptoma/eslint-config": "^4.0.0",
+    "chai": "^3.5.0",
+    "eslint": "^3.6.1",
+    "hapi": "^15.1.0",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.1.0",
+    "mocha-only-detector": "^0.1.0",
+    "release-it": "^2.4.3"
+  }
+}
