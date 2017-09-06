@@ -107,7 +107,6 @@ function formatError(req, reply) {
 	if (!response.isBoom) {
 		return reply.continue();
 	}
-
 	const errorObject = {
 		status: String(response.output.statusCode),
 		title: response.output.payload.error,
@@ -124,11 +123,20 @@ function formatError(req, reply) {
 		if (response.output.statusCode === 500) {
 			req.log('error', response.data instanceof Buffer ? response.data.toString() : response.data);
 		}
+
+		if (response.data.isJoi && response.data.details && typeof response.data.details.map === 'function') {
+			const message = response.data.details.map(getJoiErrorMessage).join(', ');
+			errorObject.details = message;
+		}
 	}
 
 	return reply({
 		errors: [errorObject]
 	}).code(response.output.statusCode);
+}
+
+function getJoiErrorMessage(details) {
+	return `Validation error: ${details.message} (${details.path})`;
 }
 
 /**
@@ -141,7 +149,7 @@ function formatError(req, reply) {
  */
 function formatCollection(type, items, options) {
 	options = options || {};
-	const data = items.map(R.curry(toAPI)(type, R.__, options));
+	const data = items.map((i) => toAPI(type, i, options));
 
 	if (!options.includedRelationships) {
 		return appendMeta(options.meta, {data: data});
@@ -218,16 +226,29 @@ function toAPI(type, data, options) {
 		ret.included = [];
 	}
 
-	if (R.is(Function, data.getRelationships)) {
+	let getRelationships;
+	if (typeof (options.getRelationships) === 'function') {
+		getRelationships = options.getRelationships;
+	} else if (typeof (data.getRelationships) === 'function') {
+		getRelationships = data.getRelationships.bind(data);
+	}
+
+	if (getRelationships) {
 		ret.relationships = {};
-		data.getRelationships(options).forEach((relationship) => {
-			delete ret.attributes[relationship.type];
+		getRelationships(options, data).forEach((relationship) => {
+			if (!relationship.keep) {
+				delete ret.attributes[relationship.type];
+				if (relationship.name) {
+					delete ret.attributes[relationship.name];
+				}
+			}
+
 			let relationshipData;
 
 			if (relationship.item) {
 				relationshipData = {
 					type: relationship.type,
-					id: relationship.item._bsontype ? relationship.item.toString() : relationship.item.id
+					id: getId(relationship.item)
 				};
 
 				if (ret.included && R.contains(relationship.type, options.includedRelationships)) {
@@ -237,7 +258,7 @@ function toAPI(type, data, options) {
 				relationshipData = relationship.items.map((item) => {
 					const data = {
 						type: relationship.type,
-						id: item.id
+						id: getId(item)
 					};
 					if (ret.included && R.contains(relationship.type, options.includedRelationships)) {
 						ret.included.push(toAPI(relationship.type, item));
@@ -252,4 +273,26 @@ function toAPI(type, data, options) {
 	}
 
 	return ret;
+}
+
+/**
+ * Get ID as string from mixed mongoose/mongodb objects
+ *
+ * @param  {Object|String} item
+ * @return {String}
+ */
+function getId(item) {
+	if (item._bsontype) {
+		// its important that check for ._bsontype is above the check for .id since both will evaluate true
+		// on a ObjectId
+		return item.toString();
+	}
+
+	if (item.id) {
+		return item.id;
+	}
+
+	if (typeof (item) === 'string') {
+		return item;
+	}
 }
