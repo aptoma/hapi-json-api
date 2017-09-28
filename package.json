@@ -15,7 +15,7 @@
     "release:major": "npm run ci && release-it -n -i major"
   },
   "engines": {
-    "node": ">=4.x.x"
+    "node": ">=6.x.x"
   },
   "repository": {
     "type": "git",
@@ -46,9 +46,9 @@
     "@aptoma/eslint-config": "^4.0.0",
     "chai": "^3.5.0",
     "eslint": "^3.6.1",
-    "hapi": "^15.1.0",
+    "hapi": "^16.6.2",
     "istanbul": "^0.4.5",
-    "mocha": "^3.1.0",
+    "mocha": "^3.2.0",
     "mocha-only-detector": "^0.1.0",
     "release-it": "^2.4.3"
   }
