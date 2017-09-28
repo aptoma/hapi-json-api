@@ -103,10 +103,17 @@ function replyFunction(type, objects, options, code) {
  * @return {Hapi.ResponseObject}
  */
 function formatError(req, reply) {
-	const response = req.response;
+	let response = req.response;
+
 	if (!response.isBoom) {
 		return reply.continue();
 	}
+
+	if (response.data && response.data.isBoom) {
+		// fix for https://github.com/hapijs/hapi/issues/3587
+		response = response.data;
+	}
+
 	const errorObject = {
 		status: String(response.output.statusCode),
 		title: response.output.payload.error,

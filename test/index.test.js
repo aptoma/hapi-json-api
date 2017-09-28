@@ -1,10 +1,51 @@
 'use strict';
 
 const Hapi = require('hapi');
+const Boom = require('boom');
 const assert = require('chai').assert;
 const jsonapiPlugin = require('../');
 
 describe('JSON API Plugin', () => {
+
+	describe('onPreResponse', () => {
+
+		it('should handle wrapped boom errors', (done) => {
+			// fixes https://github.com/hapijs/hapi/issues/3587
+
+			const domain = require('domain');
+			const hapiDomain = domain.create();
+			const server = new Hapi.Server();
+			server.connection();
+
+			hapiDomain.on('error', done);
+
+			hapiDomain.run(() => {
+				server.route({
+					method: 'GET',
+					path: '/test',
+					handler(req, reply) {
+						process.nextTick(() => {
+							throw Boom.create(409, 'testo');
+						});
+					}
+				});
+
+				server
+					.register({register: jsonapiPlugin})
+					.then(() => server.inject({method: 'GET', url: '/test'}))
+					.then((res) => {
+						assert.equal(res.statusCode, 409);
+						assert.deepEqual(res.result, {
+							errors: [{status: '409', title: 'Conflict', details: 'testo'}]
+						});
+						done();
+					})
+					.catch(done);
+			});
+
+		});
+
+	});
 
 	describe('Decorated reply functions', () => {
 		let server;
