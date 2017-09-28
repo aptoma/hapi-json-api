@@ -15,7 +15,7 @@
     "release:major": "npm run ci && release-it -n -i major"
   },
   "engines": {
-    "node": ">=4.x.x"
+    "node": ">=6.x.x"
   },
   "repository": {
     "type": "git",
