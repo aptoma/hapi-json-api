@@ -15,7 +15,7 @@
     "release:major": "npm run ci && release-it -n -i major"
   },
   "engines": {
-    "node": ">=6.x.x"
+    "node": ">=8.x.x"
   },
   "repository": {
     "type": "git",
@@ -33,6 +33,9 @@
   "homepage": "https://github.com/aptoma/hapi-json-api",
   "eslintConfig": {
     "extends": "@aptoma/eslint-config",
+    "parserOptions": {
+      "ecmaVersion": "2017"
+    },
     "env": {
       "node": true,
       "mocha": true,
@@ -40,15 +43,15 @@
     }
   },
   "dependencies": {
-    "ramda": "^0.22.1"
+    "ramda": "^0.25.0"
   },
   "devDependencies": {
-    "@aptoma/eslint-config": "^4.0.0",
-    "chai": "^3.5.0",
-    "eslint": "^3.6.1",
-    "hapi": "^16.6.2",
+    "@aptoma/eslint-config": "^7.0.1",
+    "chai": "^4.1.2",
+    "eslint": "^4.12.1",
+    "hapi": "^17.1.1",
     "istanbul": "^0.4.5",
-    "mocha": "^3.2.0",
+    "mocha": "^4.0.1",
     "mocha-only-detector": "^0.1.0",
     "release-it": "^2.4.3"
   }
