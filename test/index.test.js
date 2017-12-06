@@ -1,236 +1,176 @@
 'use strict';
 
 const Hapi = require('hapi');
-const Boom = require('boom');
 const assert = require('chai').assert;
-const jsonapiPlugin = require('../');
+const jsonapi = require('../');
+const plugin = jsonapi.plugin;
 
 describe('JSON API Plugin', () => {
-
-	describe('onPreResponse', () => {
-
-		it('should handle wrapped boom errors', (done) => {
-			// fixes https://github.com/hapijs/hapi/issues/3587
-
-			const domain = require('domain');
-			const hapiDomain = domain.create();
-			const server = new Hapi.Server();
-			server.connection();
-
-			hapiDomain.on('error', done);
-
-			hapiDomain.run(() => {
-				server.route({
-					method: 'GET',
-					path: '/test',
-					handler(req, reply) {
-						process.nextTick(() => {
-							throw Boom.create(409, 'testo');
-						});
-					}
-				});
-
-				server
-					.register({register: jsonapiPlugin})
-					.then(() => server.inject({method: 'GET', url: '/test'}))
-					.then((res) => {
-						assert.equal(res.statusCode, 409);
-						assert.deepEqual(res.result, {
-							errors: [{status: '409', title: 'Conflict', details: 'testo'}]
-						});
-						done();
-					})
-					.catch(done);
-			});
-
-		});
-
-	});
 
 	describe('Decorated reply functions', () => {
 		let server;
 
-		function testReply(handler, response) {
+		function testReply(handler) {
 			server.route({
 				method: 'GET',
 				path: '/test',
 				handler: handler
 			});
 
-			server.inject({method: 'GET', url: '/test'}, response);
+			return server.inject({method: 'GET', url: '/test'});
 		}
 
-		beforeEach((done) => {
-			server = new Hapi.Server();
-			server.connection();
-			server.register({
-				register: jsonapiPlugin
-			}, done);
+		beforeEach(async () => {
+			server = new Hapi.Server({debug: {request: '*'}});
+			await server.register({plugin});
 		});
 
-		describe('#reply.jsonApi()', () => {
+		describe('#h.jsonApi()', () => {
 
-			it('should format single object and reply', (done) => {
+			it('should format single object and reply', async () => {
 				const model = new Model({id: 1, name: 'foo'});
 
-				testReply((req, reply) => {
-					reply.jsonApi('models', model);
-				}, (res) => {
-					assert.deepEqual(res.result, {
-						data: {
-							type: 'models',
-							id: 1,
-							attributes: {
-								name: 'foo'
-							},
-							relationships: {
-								foos: {data: []}
-							}
+				const res = await testReply((req, h) => h.jsonApi('models', model));
+
+				assert.deepEqual(res.result, {
+					data: {
+						type: 'models',
+						id: 1,
+						attributes: {
+							name: 'foo'
+						},
+						relationships: {
+							foos: {data: []}
 						}
-					});
-					done();
+					}
 				});
 			});
 
-			it('should format collection and reply', (done) => {
+			it('should format collection and reply', async () => {
 				const model = new Model({id: 1, name: 'foo'});
 
-				testReply((req, reply) => {
-					reply.jsonApi('models', [model]);
-				}, (res) => {
-					assert.deepEqual(res.result, {
-						data: [{
-							type: 'models',
-							id: 1,
-							attributes: {
-								name: 'foo'
-							},
-							relationships: {
-								foos: {data: []}
-							}
-						}]
-					});
-					done();
+				const res = await testReply((req, h) => h.jsonApi('models', [model]));
+
+				assert.deepEqual(res.result, {
+					data: [{
+						type: 'models',
+						id: 1,
+						attributes: {
+							name: 'foo'
+						},
+						relationships: {
+							foos: {data: []}
+						}
+					}]
 				});
 			});
 
-			it('should format and reply with options', (done) => {
+			it('should format and reply with options', async () => {
 				const model = new Model({id: 1, name: 'foo'});
 
-				testReply((req, reply) => {
-					reply.jsonApi('models', [model], {meta: {foo: 'bar'}});
-				}, (res) => {
-					assert.deepEqual(res.result, {
-						data: [{
-							type: 'models',
-							id: 1,
-							attributes: {
-								name: 'foo'
-							},
-							relationships: {
-								foos: {data: []}
-							}
-						}],
-						meta: {
-							foo: 'bar'
+				const res = await testReply(
+					(req, reply) => reply.jsonApi('models', [model], {meta: {foo: 'bar'}})
+				);
+
+				assert.deepEqual(res.result, {
+					data: [{
+						type: 'models',
+						id: 1,
+						attributes: {
+							name: 'foo'
+						},
+						relationships: {
+							foos: {data: []}
 						}
-					});
-					done();
+					}],
+					meta: {
+						foo: 'bar'
+					}
 				});
 			});
 		});
 
 		describe('#reply.jsonApiFunction()', () => {
 
-			it('should format single object and reply', (done) => {
+			it('should format single object and reply', async () => {
 				const model = new Model({id: 1, name: 'foo'});
 
-				testReply((req, reply) => {
-					reply.jsonApiFunction('models')(model);
-				}, (res) => {
-					assert.deepEqual(res.result, {
-						data: {
-							type: 'models',
-							id: 1,
-							attributes: {
-								name: 'foo'
-							},
-							relationships: {
-								foos: {data: []}
-							}
-						}
-					});
-					done();
-				});
-			});
+				const res = await testReply((req, reply) => reply.jsonApiFunction('models')(model));
 
-			it('should format collection and reply', (done) => {
-				const model = new Model({id: 1, name: 'foo'});
-
-				testReply((req, reply) => {
-					reply.jsonApiFunction('models')([model]);
-				}, (res) => {
-					assert.deepEqual(res.result, {
-						data: [{
-							type: 'models',
-							id: 1,
-							attributes: {
-								name: 'foo'
-							},
-							relationships: {
-								foos: {data: []}
-							}
-						}]
-					});
-					done();
-				});
-			});
-
-			it('should format and reply with options', (done) => {
-				const model = new Model({id: 1, name: 'foo'});
-
-				testReply((req, reply) => {
-					reply.jsonApiFunction('models', {meta: {foo: 'bar'}})(model);
-				}, (res) => {
-					assert.deepEqual(res.result, {
-						data: {
-							type: 'models',
-							id: 1,
-							attributes: {
-								name: 'foo'
-							},
-							relationships: {
-								foos: {data: []}
-							}
+				assert.deepEqual(res.result, {
+					data: {
+						type: 'models',
+						id: 1,
+						attributes: {
+							name: 'foo'
 						},
-						meta: {
-							foo: 'bar'
+						relationships: {
+							foos: {data: []}
 						}
-					});
-					done();
+					}
 				});
 			});
 
-			it('should format and reply with custom statuscode', (done) => {
+			it('should format collection and reply', async () => {
 				const model = new Model({id: 1, name: 'foo'});
 
-				testReply((req, reply) => {
-					reply.jsonApiFunction('models', {}, 201)(model);
-				}, (res) => {
-					assert.equal(res.statusCode, 201);
-					assert.deepEqual(res.result, {
-						data: {
-							type: 'models',
-							id: 1,
-							attributes: {
-								name: 'foo'
-							},
-							relationships: {
-								foos: {data: []}
-							}
+				const res = await testReply((req, reply) => reply.jsonApiFunction('models')([model]));
+
+				assert.deepEqual(res.result, {
+					data: [{
+						type: 'models',
+						id: 1,
+						attributes: {
+							name: 'foo'
+						},
+						relationships: {
+							foos: {data: []}
 						}
-					});
-					done();
+					}]
+				});
+			});
+
+			it('should format and reply with options', async () => {
+				const model = new Model({id: 1, name: 'foo'});
+
+				const res = await testReply(
+					(req, reply) => reply.jsonApiFunction('models', {meta: {foo: 'bar'}})(model)
+				);
+
+				assert.deepEqual(res.result, {
+					data: {
+						type: 'models',
+						id: 1,
+						attributes: {
+							name: 'foo'
+						},
+						relationships: {
+							foos: {data: []}
+						}
+					},
+					meta: {
+						foo: 'bar'
+					}
+				});
+			});
+
+			it('should format and reply with custom statuscode', async () => {
+				const model = new Model({id: 1, name: 'foo'});
+
+				const res = await testReply((req, reply) => reply.jsonApiFunction('models', {}, 201)(model));
+
+				assert.equal(res.statusCode, 201);
+				assert.deepEqual(res.result, {
+					data: {
+						type: 'models',
+						id: 1,
+						attributes: {
+							name: 'foo'
+						},
+						relationships: {
+							foos: {data: []}
+						}
+					}
 				});
 			});
 		});
@@ -240,7 +180,7 @@ describe('JSON API Plugin', () => {
 
 		it('should format data according to jsonapi.org spec', () => {
 			const model = new Model({id: 1, name: 'foo'});
-			const result = jsonapiPlugin.toAPI('models', model);
+			const result = jsonapi.toAPI('models', model);
 			assert.deepEqual(result, {
 				type: 'models',
 				id: 1,
@@ -255,7 +195,7 @@ describe('JSON API Plugin', () => {
 
 		it('should support named relationships', () => {
 			const model = new Model({id: 1, name: 'foo'}, namedRelationships);
-			const result = jsonapiPlugin.toAPI('models', model);
+			const result = jsonapi.toAPI('models', model);
 			assert.deepEqual(result, {
 				type: 'models',
 				id: 1,
@@ -269,7 +209,7 @@ describe('JSON API Plugin', () => {
 		});
 
 		it('should support raw json data', () => {
-			const result = jsonapiPlugin.toAPI('models', {name: 'foo', id: 'foo'});
+			const result = jsonapi.toAPI('models', {name: 'foo', id: 'foo'});
 			assert.deepEqual(result, {
 				type: 'models',
 				id: 'foo',
@@ -285,7 +225,7 @@ describe('JSON API Plugin', () => {
 		it('should append meta at top level', () => {
 			const model = new Model({name: 'foo'});
 			const meta = {foo: 'bar'};
-			const result = jsonapiPlugin.formatObject('models', model, {
+			const result = jsonapi.formatObject('models', model, {
 				meta: meta
 			});
 			assert.deepEqual(result.meta, meta);
@@ -294,7 +234,7 @@ describe('JSON API Plugin', () => {
 		it('should format data according to jsonapi.org spec and wrap in `data` field', () => {
 			const foos = [{id: '1', name: 'foo1'}, {id: '2', name: 'foo2'}];
 			const model = new Model({id: 1, name: 'foo', foos: foos});
-			const result = jsonapiPlugin.formatObject('models', model);
+			const result = jsonapi.formatObject('models', model);
 			assert.deepEqual(result, {
 				data: {
 					type: 'models',
@@ -319,7 +259,7 @@ describe('JSON API Plugin', () => {
 
 		it('should format data according to jsonapi.org spec and wrap in `data` field', () => {
 			const model = new Model({id: 1, name: 'foo'});
-			const result = jsonapiPlugin.formatCollection('models', [model]);
+			const result = jsonapi.formatCollection('models', [model]);
 			assert.deepEqual(result, {
 				data: [{
 					type: 'models',
@@ -337,7 +277,7 @@ describe('JSON API Plugin', () => {
 		it('should append meta at top level', () => {
 			const model = new Model({name: 'foo'});
 			const meta = {foo: 'bar'};
-			const result = jsonapiPlugin.formatCollection('models', [model], {
+			const result = jsonapi.formatCollection('models', [model], {
 				meta: meta
 			});
 			assert.deepEqual(result.meta, meta);
@@ -350,7 +290,7 @@ describe('JSON API Plugin', () => {
 				foos: [{id: 123, name: 'foo-1'}]
 			});
 
-			const result = jsonapiPlugin.formatCollection('models', [model], {
+			const result = jsonapi.formatCollection('models', [model], {
 				includedRelationships: ['foos']
 			});
 
@@ -391,7 +331,7 @@ describe('JSON API Plugin', () => {
 				]
 			});
 
-			const result = jsonapiPlugin.formatCollection('models', [model1, model2], {
+			const result = jsonapi.formatCollection('models', [model1, model2], {
 				includedRelationships: ['foos']
 			});
 

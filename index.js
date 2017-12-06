@@ -21,23 +21,20 @@ exports.formatObject = formatObject;
 exports.formatCollection = formatCollection;
 exports.toAPI = toAPI;
 
-exports.register = function (server, options, next) {
-	server.expose('formatObject', exports.formatObject);
-	server.expose('formatObjectWithOptions', exports.formatObjectWithOptions);
-	server.expose('formatCollection', exports.formatCollection);
-	server.expose('formatCollectionWithOptions', exports.formatCollectionWithOptions);
-	server.expose('toAPI', exports.toAPI);
+exports.plugin = {
+	name: 'service-jsonapi',
+	register(server) {
+		server.expose('formatObject', exports.formatObject);
+		server.expose('formatObjectWithOptions', exports.formatObjectWithOptions);
+		server.expose('formatCollection', exports.formatCollection);
+		server.expose('formatCollectionWithOptions', exports.formatCollectionWithOptions);
+		server.expose('toAPI', exports.toAPI);
 
-	server.ext('onPreResponse', formatError);
+		server.ext('onPreResponse', formatError);
 
-	server.decorate('reply', 'jsonApi', replyJsonApi);
-	server.decorate('reply', 'jsonApiFunction', replyJsonApiFunction);
-
-	next();
-};
-
-exports.register.attributes = {
-	name: 'service-jsonapi'
+		server.decorate('toolkit', 'jsonApi', replyJsonApi);
+		server.decorate('toolkit', 'jsonApiFunction', replyJsonApiFunction);
+	}
 };
 
 const internals = {
@@ -54,7 +51,7 @@ const internals = {
  * @return {Hapi.ResponseObject}
  */
 function replyJsonApi(type, objects, options) {
-	return replyFunction.bind(this)(type, objects, options); // jshint ignore:line
+	return replyFunction.bind(this)(type, objects, options);
 }
 
 /**
@@ -67,7 +64,7 @@ function replyJsonApi(type, objects, options) {
  * @return {Function} returns curried replyFunction that accepts objects to format as a parameter.
  */
 function replyJsonApiFunction(type, options, code) {
-	return R.curry(R.bind(replyFunction, this))(type, R.__, options, code); // jshint ignore:line
+	return R.curry(R.bind(replyFunction, this))(type, R.__, options, code);
 }
 
 /**
@@ -84,13 +81,13 @@ function replyFunction(type, objects, options, code) {
 	let resp;
 	options = options || {};
 	if (objects instanceof Array) {
-		resp = this.response(formatCollection(type, objects, options)); // jshint ignore:line
+		resp = this.response(formatCollection(type, objects, options));
 	} else {
-		resp = this.response(formatObject(type, objects, options)); // jshint ignore:line
+		resp = this.response(formatObject(type, objects, options));
 	}
 
 	if (code) {
-		resp.code(code); // jshint ignore:line
+		resp.code(code);
 	}
 
 	return resp;
@@ -99,19 +96,14 @@ function replyFunction(type, objects, options, code) {
 /**
  * onPreResponse handler for formatting error objects according to JSONAPI spec.
  * @param  {Hapi.Request} req
- * @param  {Hapi.Reply} reply
+ * @param  {Hapi.Toolkit} h
  * @return {Hapi.ResponseObject}
  */
-function formatError(req, reply) {
-	let response = req.response;
+function formatError(req, h) {
+	const response = req.response;
 
 	if (!response.isBoom) {
-		return reply.continue();
-	}
-
-	if (response.data && response.data.isBoom) {
-		// fix for https://github.com/hapijs/hapi/issues/3587
-		response = response.data;
+		return h.continue;
 	}
 
 	const errorObject = {
@@ -137,7 +129,7 @@ function formatError(req, reply) {
 		}
 	}
 
-	return reply({
+	return h.response({
 		errors: [errorObject]
 	}).code(response.output.statusCode);
 }
