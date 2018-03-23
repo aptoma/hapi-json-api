@@ -135,7 +135,7 @@ function formatError(req, h) {
 }
 
 function getJoiErrorMessage(details) {
-	return `Validation error: ${details.message} (${details.path})`;
+	return `Validation error: ${details.message} (${details.path.join('.')})`;
 }
 
 /**
