@@ -1,11 +1,41 @@
 'use strict';
 
 const Hapi = require('hapi');
+const Joi = require('joi');
 const assert = require('chai').assert;
 const jsonapi = require('../');
 const plugin = jsonapi.plugin;
 
 describe('JSON API Plugin', () => {
+
+	describe('Error formatting', () => {
+		it('should format joi errors to more human readable output', async () => {
+			const server = new Hapi.Server({debug: {request: '*'}});
+			await server.register({plugin});
+			server.route({
+				method: 'POST',
+				path: '/test',
+				config: {
+					validate: {
+						failAction: (req, h, err) => err,
+						payload: {
+							fo: Joi.object({
+								bar: Joi.object({
+									banana: Joi.number().required()
+								}).required()
+							}).required()
+						}
+					},
+					handler(req, h) {
+						return h.response().code(204);
+					}
+				}
+			});
+
+			const res = await server.inject({method: 'POST', url: '/test', payload: {fo: {}}});
+			assert.equal(res.result.errors[0].details, 'Validation error: "bar" is required (fo,bar)');
+		});
+	});
 
 	describe('Decorated reply functions', () => {
 		let server;

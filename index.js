@@ -122,11 +122,11 @@ function formatError(req, h) {
 		if (response.output.statusCode === 500) {
 			req.log('error', response.data instanceof Buffer ? response.data.toString() : response.data);
 		}
+	}
 
-		if (response.data.isJoi && response.data.details && typeof response.data.details.map === 'function') {
-			const message = response.data.details.map(getJoiErrorMessage).join(', ');
-			errorObject.details = message;
-		}
+	if (response.isJoi && response.details && typeof response.details.map === 'function') {
+		const message = response.details.map(getJoiErrorMessage).join(', ');
+		errorObject.details = message;
 	}
 
 	return h.response({
