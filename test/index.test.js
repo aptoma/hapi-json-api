@@ -33,7 +33,7 @@ describe('JSON API Plugin', () => {
 			});
 
 			const res = await server.inject({method: 'POST', url: '/test', payload: {fo: {}}});
-			assert.equal(res.result.errors[0].details, 'Validation error: "bar" is required (fo,bar)');
+			assert.equal(res.result.errors[0].details, 'Validation error: "bar" is required (fo.bar)');
 		});
 	});
 
