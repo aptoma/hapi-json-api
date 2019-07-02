@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 4.0.0
+
+* [[70fbef9](../../commit/70fbef9)] Update deps & drop node 8 support
+
 ## 3.0.1
 
 * [[d13324a](../../commit/d13324a)] Change error message to look more like it did before
