@@ -6,16 +6,15 @@
   "scripts": {
     "lint": "eslint --ext '.js' test *.js",
     "watch": "mocha --watch 'test/**/*.js' '*.js' --timeout 500",
-    "test": "npm run lint && NODE_ENV=test istanbul cover -i '*.js' _mocha -- -u exports -R spec --timeout 3000 'test/**/*.test.js'",
+    "test": "npm run lint && nyc --reporter=text-summary --reporter=lcov mocha --exit 'test/**/*.test.js'",
     "mocha-only-detect": "mocha-only-detector-glob **/*.test.js",
-    "ci": "npm test --coverage && istanbul report cobertura",
     "changelog": "git log `git describe --tags --abbrev=0`..HEAD --pretty=format:\"  * %s\"",
     "release": "npm run ci && release-it -n -i patch",
     "release:minor": "npm run ci && release-it -n -i minor",
     "release:major": "npm run ci && release-it -n -i major"
   },
   "engines": {
-    "node": ">=8.x.x"
+    "node": ">=10.x.x"
   },
   "repository": {
     "type": "git",
@@ -43,16 +42,16 @@
     }
   },
   "dependencies": {
-    "ramda": "^0.25.0"
+    "ramda": "^0.26.1"
   },
   "devDependencies": {
     "@aptoma/eslint-config": "^7.0.1",
-    "chai": "^4.1.2",
-    "eslint": "^4.12.1",
-    "hapi": "^17.1.1",
-    "istanbul": "^0.4.5",
-    "mocha": "^4.0.1",
-    "mocha-only-detector": "^0.1.0",
+    "@hapi/hapi": "^18.3.1",
+    "chai": "^4.2.0",
+    "eslint": "^6.0.1",
+    "mocha": "^6.1.4",
+    "mocha-only-detector": "^1.0.1",
+    "nyc": "^14.1.1",
     "release-it": "^2.4.3"
   }
 }

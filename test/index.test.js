@@ -1,7 +1,7 @@
 'use strict';
 
-const Hapi = require('hapi');
-const Joi = require('joi');
+const Hapi = require('@hapi/hapi');
+const Joi = require('@hapi/joi');
 const assert = require('chai').assert;
 const jsonapi = require('../');
 const plugin = jsonapi.plugin;
