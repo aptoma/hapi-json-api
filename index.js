@@ -221,7 +221,7 @@ function toAPI(type, data, options) {
 	delete ret.attributes.id;
 	delete ret.attributes._id;
 
-	if (options.includedRelationships && options.includedRelationships.length) {
+	if (Array.isArray(options.includedRelationships)) {
 		ret.included = [];
 	}
 

@@ -210,7 +210,7 @@ describe('JSON API Plugin', () => {
 
 		it('should format data according to jsonapi.org spec', () => {
 			const model = new Model({id: 1, name: 'foo'});
-			const result = jsonapi.toAPI('models', model);
+			const result = jsonapi.toAPI('models', model, {includedRelationships: []});
 			assert.deepEqual(result, {
 				type: 'models',
 				id: 1,
@@ -219,7 +219,8 @@ describe('JSON API Plugin', () => {
 				},
 				relationships: {
 					foos: {data: []}
-				}
+				},
+				included: []
 			});
 		});
 
