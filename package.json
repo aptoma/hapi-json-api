@@ -1,6 +1,6 @@
 {
   "name": "@aptoma/hapi-json-api",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Hapi plugin for formatting output/errors according to the JSON API specification",
   "main": "index.js",
   "scripts": {
